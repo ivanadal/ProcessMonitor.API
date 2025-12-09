@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="ProcessMonitor.API/ProcessMonitor.API.csproj" />
+  <Project Path="ProcessMonitor.Data/ProcessMonitor.Data.csproj" />
+  <Project Path="ProcessMonitor.UnitTests/ProcessMonitor.UnitTests.csproj" Id="e23941a8-5eff-402c-8476-d901b3b535d3" />
+</Solution>
