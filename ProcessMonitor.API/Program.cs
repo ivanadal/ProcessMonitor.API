@@ -1,5 +1,5 @@
 using FluentValidation;
-using FluentValidation.AspNetCore;
+using ProcessMonitor.API.Middlewares;
 using ProcessMonitor.API.Services;
 using ProcessMonitor.API.Validators;
 using System.Threading.RateLimiting;
@@ -39,6 +39,8 @@ builder.Services.AddRateLimiter(options =>
 
 
 var app = builder.Build();
+
+app.UseMiddleware<ApiKeyMiddleware>();
 
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();

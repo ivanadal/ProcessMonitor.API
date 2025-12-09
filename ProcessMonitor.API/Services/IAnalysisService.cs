@@ -4,7 +4,7 @@ namespace ProcessMonitor.API.Services
 {
     public interface IAnalysisService
     {
-        Task<AnalyzeResult> AnalyzeAsync(string action, string guideline);
+        Task<AnalyzeResponse> AnalyzeAsync(string action, string guideline);
         
     }
 }

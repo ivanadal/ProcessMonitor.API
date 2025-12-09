@@ -17,7 +17,7 @@ namespace ProcessMonitor.API.Controllers.v1
             _analysisService = analysisService;
         }
 
-        [Authorize] // Real implementation would use JWT or OAuth    
+       // [Authorize] // Real implementation would use JWT or OAuth    
         [HttpPost("analyze")] // POST /processmonitor/analyze
         public async Task<IActionResult> Analyze([FromBody] AnalyzeRequest request)
         {

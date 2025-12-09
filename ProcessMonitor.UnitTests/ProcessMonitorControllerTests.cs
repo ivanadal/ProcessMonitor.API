@@ -1,10 +1,10 @@
 ﻿namespace ProcessMonitor.UnitTests;
 
 [TestClass]
-public sealed class Test1
+public sealed class ProcessMonitorControllerTests
 {
     [TestMethod]
-    public void TestMethod1()
+    public void AnalyzeTest()
     {
     }
 }
