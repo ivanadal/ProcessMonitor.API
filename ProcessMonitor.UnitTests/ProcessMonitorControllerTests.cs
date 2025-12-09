@@ -1,14 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿namespace ProcessMonitor.UnitTests;
 
-namespace ProcessMonitor.UnitTests
+[TestClass]
+public sealed class Test1
 {
-    [TestClass]
-    public class ProcessMonitorControllerTests
+    [TestMethod]
+    public void TestMethod1()
     {
-        [TestMethod]
-        public void AnalyzeTest()
-        {
-        }
     }
 }

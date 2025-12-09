@@ -1,5 +1,6 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using ProcessMonitor.API.Services;
 using ProcessMonitor.API.Validators;
 using System.Threading.RateLimiting;
 
@@ -9,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddValidatorsFromAssemblyContaining<AnalyzeRequestValidator>();
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
+builder.Configuration.AddEnvironmentVariables();
+
+builder.Services.AddHttpClient<IAnalysisService, HuggingFaceAnalysisService>();
 
 // Swagger services
 builder.Services.AddEndpointsApiExplorer();
