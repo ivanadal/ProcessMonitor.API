@@ -1,4 +1,5 @@
-﻿using ProcessMonitor.Domain.Entities;
+﻿using ProcessMonitor.Data;
+using ProcessMonitor.Domain.Entities;
 using ProcessMonitor.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -8,9 +9,17 @@ namespace ProcessMonitor.Infrastructure.Repositories
 {
     public class AnalysisRepository : IAnalysisRepository
     {
-        public Task AddAsync(Analysis analysis)
+        private readonly AppDbContext _db;
+
+        public AnalysisRepository(AppDbContext db)
         {
-            throw new NotImplementedException();
+            _db = db;
+        }
+        public async Task<Analysis> AddAsync(Analysis analysis)
+        {
+            _db.Analyses.Add(analysis);
+            await _db.SaveChangesAsync();
+            return analysis;
         }
 
         public Task<List<Analysis>> GetAllAsync()

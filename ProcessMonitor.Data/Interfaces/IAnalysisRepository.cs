@@ -7,7 +7,7 @@ namespace ProcessMonitor.Domain.Interfaces
 {
     public interface IAnalysisRepository
     {
-        Task AddAsync(Analysis analysis);
+        Task<Analysis> AddAsync(Analysis analysis);
         Task<List<Analysis>> GetAllAsync();
         Task<int> GetTotalCountAsync();
         Task<Dictionary<string, int>> GetCountByResultAsync();
