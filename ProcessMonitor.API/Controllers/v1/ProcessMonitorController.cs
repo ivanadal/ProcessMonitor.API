@@ -1,13 +1,12 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProcessMonitor.API.Models;
-using ProcessMonitor.API.Services;
+using ProcessMonitor.Domain.Interfaces;
 
 
 namespace ProcessMonitor.API.Controllers.v1
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("v1/[controller]")]
     public class ProcessMonitorController : ControllerBase
     {
         private readonly IAnalysisService _analysisService;
@@ -17,13 +16,22 @@ namespace ProcessMonitor.API.Controllers.v1
             _analysisService = analysisService;
         }
 
-       // [Authorize] // Real implementation would use JWT or OAuth    
-        [HttpPost("analyze")] // POST /processmonitor/analyze
+        // POST /processmonitor/analyze
+        [HttpPost("analyze")] 
         public async Task<IActionResult> Analyze([FromBody] AnalyzeRequest request)
         {
-            var result = await _analysisService.AnalyzeAsync(request.Action, request.Guideline);
+            var analysisResult = await _analysisService.AnalyzeAsync(request.Action, request.Guideline);
 
-            return Ok(result);
+            //var response = new AnalyzeResponse
+            //{
+            //    Action = analysisResult.Action,
+            //    Guideline = analysisResult.Guideline,
+            //    Result = analysisResult.Result,
+            //    Confidence = analysisResult.Confidence,
+            //    Timestamp = analysisResult.Timestamp
+            //};
+
+            return Ok(analysisResult);
         }
     }
 }

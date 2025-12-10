@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="ProcessMonitor.API/ProcessMonitor.API.csproj" />
-  <Project Path="ProcessMonitor.Data/ProcessMonitor.Data.csproj" />
+  <Project Path="ProcessMonitor.Data/ProcessMonitor.Domain.csproj" />
+  <Project Path="ProcessMonitor.Infrastructure/ProcessMonitor.Infrastructure.csproj" Id="b9752cdf-5a85-4a45-8056-79e67560e7fa" />
   <Project Path="ProcessMonitor.UnitTests/ProcessMonitor.UnitTests.csproj" />
 </Solution>

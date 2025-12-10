@@ -1,7 +1,12 @@
 using FluentValidation;
 using ProcessMonitor.API.Middlewares;
-using ProcessMonitor.API.Services;
 using ProcessMonitor.API.Validators;
+using ProcessMonitor.Domain.Interfaces;
+using ProcessMonitor.Domain.Services;
+using ProcessMonitor.Infrastructure.Repositories;
+using ProcessMonitor.Infrastructure.Services;
+using System;
+using System.Net.Http.Headers;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,9 +15,31 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddValidatorsFromAssemblyContaining<AnalyzeRequestValidator>();
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
+builder.Services.AddScoped<IAnalysisService, AnalysisDomainService>();
+
+builder.Services.AddHttpClient<HuggingFaceAnalysisService>((sp,client) =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+
+    var apiKey = builder.Configuration["HuggingFaceApiKey"];
+    if (string.IsNullOrWhiteSpace(apiKey))
+        throw new InvalidOperationException("Environment variable 'HuggingFaceApiKey' is missing.");
+
+   
+    client.DefaultRequestHeaders.Authorization =
+        new AuthenticationHeaderValue("Bearer", apiKey);
+});
+
+builder.Services.AddScoped<IAIAnalysisService>(sp =>
+    sp.GetRequiredService<HuggingFaceAnalysisService>());
+
+builder.Services.AddScoped<IAnalysisRepository, AnalysisRepository>();
+//builder.Services.AddDbContext<AppDbContext>(options =>
+//    options.UseSqlite("Data Source=app.db"));
+
 builder.Configuration.AddEnvironmentVariables();
 
-builder.Services.AddHttpClient<IAnalysisService, HuggingFaceAnalysisService>();
+builder.Services.AddScoped<IAnalysisService, AnalysisDomainService>();
 
 // Swagger services
 builder.Services.AddEndpointsApiExplorer();

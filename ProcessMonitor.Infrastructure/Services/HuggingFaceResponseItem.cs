@@ -1,5 +1,5 @@
-﻿namespace ProcessMonitor.API.Models
-{
+﻿namespace ProcessMonitor.Infrastructure.Services 
+{ 
     public class HuggingFaceResponseItem
     {
         public string Label { get; set; } = string.Empty;
