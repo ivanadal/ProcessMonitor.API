@@ -5,7 +5,7 @@ namespace ProcessMonitor.Domain.Interfaces
 {
     public interface IAnalysisService
     {
-        Task<AnalysisResult> AnalyzeAsync(string action, string guideline);
+        Task<Analysis> AnalyzeAsync(string action, string guideline);
         
     }
 }

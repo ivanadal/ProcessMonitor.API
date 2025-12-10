@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ProcessMonitor.Domain.Entities
 {
-    public class AnalysisResult
+    public class Analysis
     {
         public int Id { get; set; }
 

@@ -17,13 +17,13 @@ namespace ProcessMonitor.Domain.Services
             _hfService = hfService;
         }
 
-        public async Task<AnalysisResult> AnalyzeAsync(string action, string guideline)
+        public async Task<Analysis> AnalyzeAsync(string action, string guideline)
         {
             // Call external AI
             var hfItem = await _hfService.AnalyzeAsync(action);
 
             // Map HuggingFace result → Domain entity
-            var result = new AnalysisResult
+            var result = new Analysis
             {
                 Action = action,
                 Guideline = guideline,
@@ -36,7 +36,7 @@ namespace ProcessMonitor.Domain.Services
                 Timestamp = DateTime.UtcNow
             };
 
-            //await _repository.AddAsync(result);
+            await _repository.AddAsync(result);
 
             return result;
         }

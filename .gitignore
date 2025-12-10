@@ -56,3 +56,7 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Ignore SQLite DB
+*.db
+Data/*.db

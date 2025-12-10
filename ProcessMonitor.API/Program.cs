@@ -1,6 +1,8 @@
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using ProcessMonitor.API.Middlewares;
 using ProcessMonitor.API.Validators;
+using ProcessMonitor.Data;
 using ProcessMonitor.Domain.Interfaces;
 using ProcessMonitor.Domain.Services;
 using ProcessMonitor.Infrastructure.Repositories;
@@ -34,8 +36,8 @@ builder.Services.AddScoped<IAIAnalysisService>(sp =>
     sp.GetRequiredService<HuggingFaceAnalysisService>());
 
 builder.Services.AddScoped<IAnalysisRepository, AnalysisRepository>();
-//builder.Services.AddDbContext<AppDbContext>(options =>
-//    options.UseSqlite("Data Source=app.db"));
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=processmonitor.db"));
 
 builder.Configuration.AddEnvironmentVariables();
 
