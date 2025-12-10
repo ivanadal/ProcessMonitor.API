@@ -10,7 +10,6 @@ namespace ProcessMonitor.UnitTests;
 [TestClass]
 public sealed class HuggingFaceAnalysisServiceTests
 {
-
     [TestMethod]
     [DataRow("complies", "COMPLIES")]
     [DataRow("deviates", "DEVIATES")]
@@ -20,19 +19,10 @@ public sealed class HuggingFaceAnalysisServiceTests
         // Arrange
         var mockResponse = JsonSerializer.Serialize(new[]
         {
-            new
-            {
-                sequence = "Test action",
-                labels = new[] { "complies", "deviates", "unclear" },
-                scores = label switch
-                {
-                    "complies" => new float[]{0.95f, 0.03f, 0.02f},
-                    "deviates" => new float[]{0.02f, 0.90f, 0.08f},
-                    "unclear"  => new float[]{0.10f, 0.20f, 0.70f},
-                    _ => new float[]{0.33f,0.33f,0.34f}
-                }
-            }
-        });
+        new { label = "complies", score = label == "complies" ? 0.95 : 0.02 },
+        new { label = "deviates", score = label == "deviates" ? 0.90 : 0.03 },
+        new { label = "unclear",  score = label == "unclear"  ? 0.70 : 0.05 }
+    });
 
         var httpClient = CreateMockHttpClient(mockResponse);
         var config = CreateMockConfiguration();
@@ -48,6 +38,7 @@ public sealed class HuggingFaceAnalysisServiceTests
         Assert.AreEqual("Test action", result.Action);
         Assert.AreEqual("Test guideline", result.Guideline);
     }
+
 
     [TestMethod]
     public async Task AnalyzeAsync_ShouldThrow_WhenResponseIsEmpty()
