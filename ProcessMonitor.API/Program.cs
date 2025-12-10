@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ProcessMonitor.API.Middlewares;
 using ProcessMonitor.API.Validators;
 using ProcessMonitor.Data;
@@ -7,6 +8,7 @@ using ProcessMonitor.Domain.Interfaces;
 using ProcessMonitor.Domain.Services;
 using ProcessMonitor.Infrastructure.Repositories;
 using ProcessMonitor.Infrastructure.Services;
+using Serilog;
 using System;
 using System.Net.Http.Headers;
 using System.Threading.RateLimiting;
@@ -66,6 +68,12 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// Logging
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.File("Logs/app.log", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 var app = builder.Build();
 

@@ -11,7 +11,7 @@ namespace ProcessMonitor.Domain.Services
         private readonly IAnalysisRepository _repository;
         private readonly IAIAnalysisService _hfService;
 
-        public AnalysisDomainService(IAnalysisRepository repository, IAIAnalysisService hfService)
+        public AnalysisDomainService(IAnalysisRepository repository, IAIAnalysisService hfService )
         {
             _repository = repository;
             _hfService = hfService;

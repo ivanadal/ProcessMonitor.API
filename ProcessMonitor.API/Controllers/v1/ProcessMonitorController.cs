@@ -22,16 +22,9 @@ namespace ProcessMonitor.API.Controllers.v1
         {
             var analysisResult = await _analysisService.AnalyzeAsync(request.Action, request.Guideline);
 
-            //var response = new AnalyzeResponse
-            //{
-            //    Action = analysisResult.Action,
-            //    Guideline = analysisResult.Guideline,
-            //    Result = analysisResult.Result,
-            //    Confidence = analysisResult.Confidence,
-            //    Timestamp = analysisResult.Timestamp
-            //};
-
             return Ok(analysisResult);
         }
+
+
     }
 }
