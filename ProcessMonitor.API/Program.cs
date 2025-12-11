@@ -37,8 +37,13 @@ builder.Services.AddScoped<IAIAnalysisService>(sp =>
     sp.GetRequiredService<HuggingFaceAnalysisService>());
 
 builder.Services.AddScoped<IAnalysisRepository, AnalysisRepository>();
+
+// Database configuration
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=/app/Data/processmonitor.db"));
+{
+    var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+    options.UseSqlite(cs);
+});
 
 
 builder.Configuration.AddEnvironmentVariables();
@@ -70,16 +75,9 @@ builder.Services.AddRateLimiter(options =>
 var logFilePath = builder.Configuration["LogFilePath"];
 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath)!);
 Log.Logger = new LoggerConfiguration()
-   .WriteTo.Console()
+  .WriteTo.Console()
+  .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
     .CreateLogger();
-
-//if (builder.Environment.IsProduction())
-//{
-//    Log.Logger = new LoggerConfiguration()
-//        .WriteTo.Console()
-//        .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
-//        .CreateLogger();
-//}
 
 builder.Host.UseSerilog();
 

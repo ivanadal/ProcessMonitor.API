@@ -20,6 +20,15 @@ RUN dotnet publish -c Release -o /app/publish --no-restore
 FROM base AS final
 WORKDIR /app
 
+# Copy published output
+COPY --from=build /app/publish .
+
+# Copy Docker-specific appsettings
+COPY ProcessMonitor.API/appsettings.Docker.json ./appsettings.Docker.json
+
+# Set environment to pick up Docker-specific settings
+ENV ASPNETCORE_ENVIRONMENT=Docker
+
 # Create DB folder
 RUN mkdir -p /app/Data
 

@@ -18,7 +18,8 @@ Before running the API, ensure you have the following installed:
 * Environment Variables:
 
   * `HuggingFaceApiKey` – token from [huggingface.co](https://huggingface.co)
-  * `ApiKey` – key for API authorization (used for mocking authorization)
+  * `ApiKey` – key for API authorization (used for mocking authorization) 
+  - Note: This is a small project and the API key is only for demonstration and local testing purposes. In production systems, you would normally use OAuth 2.0, JWT tokens, or another robust authentication/authorization mechanism instead of a static API key.
 
 ---
 
@@ -28,10 +29,19 @@ Before running the API, ensure you have the following installed:
 
 ```bash
 # Build the Docker image
+DOCKER:
 docker build -t processmonitorapi .
+PODMAN:
+podman build -t processmonitorapi:test . 
 
 # Run the container
+DOCKER:
 docker run --rm -it -p 8080:80 `
+    -e ApiKey="testsecret" `
+    -e HuggingFaceApiKey="test" `
+    processmonitorapi:test
+PODMAN:
+podman run --rm -it -p 8080:80 `
     -e ApiKey="testsecret" `
     -e HuggingFaceApiKey="test" `
     processmonitorapi:test
