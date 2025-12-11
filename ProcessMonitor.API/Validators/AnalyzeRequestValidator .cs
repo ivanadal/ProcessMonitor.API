@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using ProcessMonitor.API.Models;
+using ProcessMonitor.API.DTOs;
 
 namespace ProcessMonitor.API.Validators
 {

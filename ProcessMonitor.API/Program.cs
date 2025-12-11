@@ -21,15 +21,14 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddScoped<IAnalysisService, AnalysisDomainService>();
 
-builder.Services.AddHttpClient<HuggingFaceAnalysisService>((sp,client) =>
+builder.Services.AddHttpClient<HuggingFaceAnalysisService>((sp, client) =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
 
-    var apiKey = builder.Configuration["HuggingFaceApiKey"];
+    var apiKey = config["HuggingFaceApiKey"];
     if (string.IsNullOrWhiteSpace(apiKey))
         throw new InvalidOperationException("Environment variable 'HuggingFaceApiKey' is missing.");
 
-   
     client.DefaultRequestHeaders.Authorization =
         new AuthenticationHeaderValue("Bearer", apiKey);
 });
@@ -42,8 +41,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=processmonitor.db"));
 
 builder.Configuration.AddEnvironmentVariables();
-
-builder.Services.AddScoped<IAnalysisService, AnalysisDomainService>();
 
 // Swagger services
 builder.Services.AddEndpointsApiExplorer();
@@ -60,17 +57,19 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: ip,
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 20,                        
-                Window = TimeSpan.FromMinutes(1),        
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 2                           
+                QueueLimit = 2
             });
     });
 });
 
 // Logging
+var logFilePath = builder.Configuration["LogFilePath"];
+Directory.CreateDirectory(Path.GetDirectoryName(logFilePath)!);
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.File("Logs/app.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Host.UseSerilog();

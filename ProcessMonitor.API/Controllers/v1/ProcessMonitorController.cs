@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using ProcessMonitor.API.DTOs;
-using ProcessMonitor.API.Models;
 using ProcessMonitor.Domain.Entities;
 using ProcessMonitor.Domain.Interfaces;
 

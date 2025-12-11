@@ -1,9 +1,6 @@
 ﻿using FluentValidation.TestHelper;
-using ProcessMonitor.API.Models;
+using ProcessMonitor.API.DTOs;
 using ProcessMonitor.API.Validators;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ProcessMonitor.Tests.UnitTests.Validators
 {

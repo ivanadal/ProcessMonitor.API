@@ -1,4 +1,4 @@
-﻿namespace ProcessMonitor.API.Models
+﻿namespace ProcessMonitor.API.DTOs
 {
     public record AnalyzeResponse(
      string Action,

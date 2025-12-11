@@ -20,8 +20,8 @@ Before running the API, ensure you have the following installed:
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/yourusername/your-repo.git
-cd your-repo
+git clone https://github.com/ivanadal/ProcessMonitor.API
+cd ProcessMonitor.API
 ```
 
 2. **Restore dependencies**
@@ -38,24 +38,20 @@ dotnet build
 
 4. **Configure the environment**
 
-* Copy `appsettings.example.json` to `appsettings.json`
-* Update connection strings or API keys as needed
+* There are DEV, Staging and production appsettings, but currently we are treating them same
+* Update LogFilePath, and ModelId if you plan to use some other model
 
 ```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=yourdatabase.db;"
+  "HuggingFace": {
+    "ModelId": "facebook/bart-large-mnli",
+    "Endpoint": "https://router.huggingface.co/hf-inference/models",
+    "CandidateLabels": [ "complies", "deviates", "unclear" ]
   },
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  }
-}
+
+  "LogFilePath": "C:/Logs/app.log"
 ```
 
-5. **Run database migrations** (if applicable)
+5. **Run database migrations** 
 
 ```bash
 dotnet ef database update
@@ -72,13 +68,10 @@ By default, the API will run on `https://localhost:7023` and `http://localhost:5
 ## API Endpoints
 
 | Method | Endpoint | Description                        |
-| ------ | -------- | ---------------------------------- |
-| GET    | /health  | Check API health                   |
+| ------ | -------- | ---------------------------------- |                
 | POST   | /analyze | Submit analysis request            |
 | GET    | /summary | Get aggregated analysis statistics |
 | GET    | /history | Get analysis history               |
-
-*(Adjust according to your project)*
 
 ## Testing
 
@@ -97,7 +90,7 @@ Logs are output to the console by default. You can configure logging in `appsett
 To build and run with Docker:
 
 ```bash
-docker build -t project-name .
+docker build -t processmonitorapi .
 docker run -p 5000:80 project-name
 ```
 
