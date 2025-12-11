@@ -1,4 +1,5 @@
-﻿using ProcessMonitor.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using ProcessMonitor.Data;
 using ProcessMonitor.Domain.Entities;
 using ProcessMonitor.Domain.Interfaces;
 using System;
@@ -22,9 +23,9 @@ namespace ProcessMonitor.Infrastructure.Repositories
             return analysis;
         }
 
-        public Task<List<Analysis>> GetAllAsync()
+        public async Task<IEnumerable<Analysis>> GetHistoryAsync()
         {
-            throw new NotImplementedException();
+            return await _db.Analyses.OrderByDescending(a => a.Timestamp).ToListAsync();
         }
 
         public Task<Dictionary<string, int>> GetCountByResultAsync()

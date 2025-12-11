@@ -10,10 +10,12 @@ namespace ProcessMonitor.API.Controllers.v1
     public class ProcessMonitorController : ControllerBase
     {
         private readonly IAnalysisService _analysisService;
+        private readonly IAnalysisRepository _repository;
 
-        public ProcessMonitorController(IAnalysisService analysisService)
+        public ProcessMonitorController(IAnalysisService analysisService, IAnalysisRepository repository)
         {
             _analysisService = analysisService;
+            _repository = repository;
         }
 
         // POST /processmonitor/analyze
@@ -25,6 +27,16 @@ namespace ProcessMonitor.API.Controllers.v1
             return Ok(analysisResult);
         }
 
+        // GET /processmonitor/history
+        [HttpGet("history")]
+        public async Task<ActionResult> GetHistory()
+        {
+            var history = await _repository.GetHistoryAsync();
 
+            if (history == null || !history.Any())
+                return NoContent(); 
+
+            return Ok(history);
+        }
     }
 }
