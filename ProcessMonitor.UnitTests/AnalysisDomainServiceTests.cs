@@ -1,7 +1,9 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.Logging;
+using Moq;
 using ProcessMonitor.Domain.Entities;
 using ProcessMonitor.Domain.Interfaces;
 using ProcessMonitor.Domain.Services;
+using ProcessMonitor.Infrastructure.Services;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,6 +16,7 @@ namespace ProcessMonitor.UnitTests
         private Mock<IAnalysisRepository> _repoMock;
         private Mock<IAIAnalysisService> _hfMock;
         private AnalysisDomainService _service;
+        protected Mock<ILogger<AnalysisDomainService>> _loggerMock;
 
         [TestInitialize]
         public void Setup()
@@ -23,8 +26,9 @@ namespace ProcessMonitor.UnitTests
                      .ReturnsAsync((Analysis a) => a);
 
             _hfMock = new Mock<IAIAnalysisService>();
+            _loggerMock = new Mock<ILogger<AnalysisDomainService>>();
 
-            _service = new AnalysisDomainService(_repoMock.Object, _hfMock.Object);
+            _service = new AnalysisDomainService(_repoMock.Object, _hfMock.Object, _loggerMock.Object);
         }
 
         [TestMethod]
