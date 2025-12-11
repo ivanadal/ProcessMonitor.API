@@ -38,7 +38,8 @@ builder.Services.AddScoped<IAIAnalysisService>(sp =>
 
 builder.Services.AddScoped<IAnalysisRepository, AnalysisRepository>();
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=processmonitor.db"));
+    options.UseSqlite("Data Source=/app/Data/processmonitor.db"));
+
 
 builder.Configuration.AddEnvironmentVariables();
 
@@ -69,17 +70,35 @@ builder.Services.AddRateLimiter(options =>
 var logFilePath = builder.Configuration["LogFilePath"];
 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath)!);
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
+   .WriteTo.Console()
     .CreateLogger();
+
+//if (builder.Environment.IsProduction())
+//{
+//    Log.Logger = new LoggerConfiguration()
+//        .WriteTo.Console()
+//        .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
+//        .CreateLogger();
+//}
 
 builder.Host.UseSerilog();
 
 var app = builder.Build();
 
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 app.UseMiddleware<ApiKeyMiddleware>();
 
 // Configure the HTTP request pipeline.
-app.UseHttpsRedirection();
+if (!builder.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 
 if (app.Environment.IsDevelopment())
 {

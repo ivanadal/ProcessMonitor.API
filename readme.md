@@ -1,6 +1,10 @@
 # ProcessMonitor.API
 
-Process Monitor API that evaluates whether actions taken during a process comply with established guidelines using a simple AI model integration.
+Process Monitor API evaluates whether actions taken during a process comply with established guidelines using a simple AI model integration.
+
+⚡ **You can run this API either via Docker or by building and running it traditionally with .NET 10 SDK.**
+
+---
 
 ## Prerequisites
 
@@ -10,12 +14,37 @@ Before running the API, ensure you have the following installed:
 * [Visual Studio 2022+](https://visualstudio.microsoft.com/) or [VS Code](https://code.visualstudio.com/)
 * [SQLite](https://www.sqlite.org/download.html)
 * Optional: [Postman](https://www.postman.com/) for testing API endpoints
-* You can also test the API using the companion console application: [ProcessMonitor.App](https://github.com/ivanadal/ProcessMonitor.App)
-* Add ENVIRONMENT VARIABLES:
-    * **HuggingFaceApiKey** - token from  huggingface.co.
-    * **ApiKey** - something that will be key for current API, to mock Autorization
-  
-## Getting Started
+* Optional: Companion console app for testing: [ProcessMonitor.App](https://github.com/ivanadal/ProcessMonitor.App)
+* Environment Variables:
+
+  * `HuggingFaceApiKey` – token from [huggingface.co](https://huggingface.co)
+  * `ApiKey` – key for API authorization (used for mocking authorization)
+
+---
+
+## Running the API
+
+### **Option 1: Using Docker**
+
+```bash
+# Build the Docker image
+docker build -t processmonitorapi .
+
+# Run the container
+docker run --rm -it -p 8080:80 `
+    -e ApiKey="testsecret" `
+    -e HuggingFaceApiKey="test" `
+    processmonitorapi:test
+```
+*NOTE: I have an old machine, so I couldn't run docker. Instead I have using podman. Therefore this is tested with podman, but it should be working with Docker as well.
+
+The API will be exposed on `http://localhost:5000` inside the container.
+
+> ⚠️ On Windows, make sure to add a `.dockerignore` file to exclude `.vs`, `bin`, `obj`, and other temporary files to avoid permission issues.
+
+---
+
+### **Option 2: Traditional .NET Build and Run**
 
 1. **Clone the repository**
 
@@ -36,22 +65,22 @@ dotnet restore
 dotnet build
 ```
 
-4. **Configure the environment**
+4. **Configure environment and appsettings**
 
-* There are DEV, Staging and production appsettings, but currently we are treating them same
-* Update LogFilePath, and ModelId if you plan to use some other model
+* The project includes DEV, Staging, and Production appsettings (currently treated the same).
+* Update `LogFilePath` and `HuggingFace` model if needed:
 
 ```json
-  "HuggingFace": {
-    "ModelId": "facebook/bart-large-mnli",
-    "Endpoint": "https://router.huggingface.co/hf-inference/models",
-    "CandidateLabels": [ "complies", "deviates", "unclear" ]
-  },
+"HuggingFace": {
+  "ModelId": "facebook/bart-large-mnli",
+  "Endpoint": "https://router.huggingface.co/hf-inference/models",
+  "CandidateLabels": ["complies", "deviates", "unclear"]
+},
 
-  "LogFilePath": "C:/Logs/app.log"
+"LogFilePath": "C:/Logs/app.log"
 ```
 
-5. **Run database migrations** 
+5. **Apply database migrations**
 
 ```bash
 dotnet ef database update
@@ -63,34 +92,43 @@ dotnet ef database update
 dotnet run
 ```
 
-By default, the API will run on `https://localhost:7023` and `http://localhost:5215`. (If needed you can change it within launchSettings.json)
+By default, the API will run on:
+
+* `https://localhost:7023`
+* `http://localhost:5215`
+
+You can adjust ports in `Properties/launchSettings.json`.
+
+---
 
 ## API Endpoints
 
 | Method | Endpoint | Description                        |
-| ------ | -------- | ---------------------------------- |                
+| ------ | -------- | ---------------------------------- |
 | POST   | /analyze | Submit analysis request            |
 | GET    | /summary | Get aggregated analysis statistics |
 | GET    | /history | Get analysis history               |
 
+---
+
 ## Testing
 
-To run unit tests:
+Run unit tests:
 
 ```bash
 dotnet test
 ```
 
+---
+
 ## Logging
 
 Logs are output to the console by default. You can configure logging in `appsettings.json`.
 
-## Docker (Optional)
+---
 
-To build and run with Docker:
+## Notes
 
-```bash
-docker build -t processmonitorapi .
-docker run -p 5000:80 project-name
-```
-
+* The API uses SQLite by default.
+* Use environment variables to avoid storing sensitive data in `appsettings.json`.
+* The companion console app can be used to send requests and test endpoints without Postman.
