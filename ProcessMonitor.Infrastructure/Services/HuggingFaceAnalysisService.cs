@@ -5,6 +5,9 @@ using ProcessMonitor.Domain.Entities;
 using ProcessMonitor.Domain.Interfaces;
 using System.Text;
 using System.Text.Json;
+using Polly;
+using Polly.Retry;
+using System.Net;
 
 namespace ProcessMonitor.Infrastructure.Services
 {
@@ -27,6 +30,7 @@ namespace ProcessMonitor.Infrastructure.Services
         public async Task<HuggingFaceResult> AnalyzeAsync(string action)
         {
             _logger.LogDebug($"{DateTime.UtcNow}: HuggingFaceAnalysisService: AnalyzeAsync method started.");
+
             var payload = new
             {
                 inputs = action,
@@ -34,35 +38,38 @@ namespace ProcessMonitor.Infrastructure.Services
             };
 
             var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-
             var url = _endpoint + $"/{_modelId}";
 
-            HttpResponseMessage response;
-            try
+            // Retry policy: only for network issues, 5xx server errors, and 429 Too Many Requests 
+            AsyncRetryPolicy<HttpResponseMessage> retryPolicy = Policy
+                .Handle<HttpRequestException>() 
+                .OrResult<HttpResponseMessage>(r =>
+                    r.StatusCode == HttpStatusCode.RequestTimeout || 
+                    r.StatusCode == (HttpStatusCode)429 ||           
+                    ((int)r.StatusCode >= 500 && (int)r.StatusCode < 600)) 
+                .WaitAndRetryAsync(
+                    retryCount: 3,
+                    sleepDurationProvider: attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt)),
+                    onRetry: (outcome, timespan, attempt, context) =>
+                    {
+                        if (outcome.Exception != null)
+                            _logger.LogWarning(outcome.Exception, $"Retry {attempt} due to network exception. Waiting {timespan.TotalSeconds}s.");
+                        else
+                            _logger.LogWarning($"Retry {attempt} due to status code {(int)outcome.Result.StatusCode}. Waiting {timespan.TotalSeconds}s.");
+                    }
+                );
+
+            HttpResponseMessage response = await retryPolicy.ExecuteAsync(async () =>
             {
-                response = await _httpClient.PostAsync(url, content);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Failed to reach HuggingFace endpoint: {url}");
-                throw; 
-            }
+                return await _httpClient.PostAsync(url, content);
+            });
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync();
-
-                _logger.LogError(
-                    $"HuggingFace request failed. Status: {(int)response.StatusCode}, Url: {url}, Body: {errorBody}");
-
-                throw new HttpRequestException(
-                    $"HuggingFace API returned {(int)response.StatusCode}: {response.ReasonPhrase}"
-                );
+                _logger.LogError($"HuggingFace request failed. Status: {(int)response.StatusCode}, Url: {url}, Body: {errorBody}");
+                throw new HttpRequestException($"HuggingFace API returned {(int)response.StatusCode}: {response.ReasonPhrase}");
             }
-            else
-            {
-                _logger.LogDebug($"{DateTime.UtcNow}: HuggingFaceAnalysisService: AnalyzeAsync - response obtained.");
-            }             
 
             var json = await response.Content.ReadAsStringAsync();
             var items = JsonSerializer.Deserialize<HuggingFaceResponseItem[]>(json,
@@ -71,7 +78,7 @@ namespace ProcessMonitor.Infrastructure.Services
             if (items == null || items.Length == 0)
                 throw new InvalidOperationException("HuggingFace returned an empty or invalid response.");
 
-            var best = items!.OrderByDescending(x => x.Score).First();
+            var best = items.OrderByDescending(x => x.Score).First();
 
             _logger.LogDebug($"{DateTime.UtcNow}: HuggingFaceAnalysisService: AnalyzeAsync - best: Label->{best.Label}; Score ->{best.Score}");
 
@@ -81,6 +88,6 @@ namespace ProcessMonitor.Infrastructure.Services
                 Score = best.Score
             };
         }
-    }
 
+    }
 }
