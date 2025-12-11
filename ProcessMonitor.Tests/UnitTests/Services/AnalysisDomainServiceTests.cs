@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ProcessMonitor.UnitTests
+namespace ProcessMonitor.Tests.UnitTests.Services
 {
     [TestClass]
     public class AnalysisDomainServiceTests

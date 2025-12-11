@@ -1,9 +1,5 @@
 ﻿namespace ProcessMonitor.API.DTOs
 {
-    public class HistoryQuery
-    {
-        public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
-    }
+    public record HistoryQuery(int Page = 1, int PageSize = 10);
 
 }

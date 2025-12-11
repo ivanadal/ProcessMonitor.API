@@ -25,16 +25,6 @@ namespace ProcessMonitor.Infrastructure.Repositories
             return await _db.Analyses.OrderByDescending(a => a.Timestamp).ToListAsync();
         }
 
-        public Task<Dictionary<string, int>> GetCountByResultAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> GetTotalCountAsync()
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<PagedResult<Analysis>> GetPagedHistoryAsync(int page, int pageSize)
         {
             var query = _db.Analyses.OrderByDescending(a => a.Timestamp);

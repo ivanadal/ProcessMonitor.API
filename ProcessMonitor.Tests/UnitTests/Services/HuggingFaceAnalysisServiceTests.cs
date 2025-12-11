@@ -7,14 +7,15 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 
-namespace ProcessMonitor.UnitTests;
+namespace ProcessMonitor.Tests.UnitTests.Services;
 
 [TestClass]
 public sealed class HuggingFaceAnalysisServiceTests
 {
     protected Mock<ILogger<HuggingFaceAnalysisService>> loggerMock;
+
     [TestInitialize]
-    public void BaseSetup()
+    public void Setup()
     {
         loggerMock = new Mock<ILogger<HuggingFaceAnalysisService>>();
     }
@@ -162,4 +163,80 @@ public sealed class HuggingFaceAnalysisServiceTests
         Assert.AreEqual(-1, result.Score);
     }
 
+    [TestMethod]
+    public async Task AnalyzeAsync_Throws_On_EmptyResponse()
+    {
+        // Arrange
+        var client = CreateMockHttpClient(HttpStatusCode.OK, "[]");
+        var config = BuildConfig();
+        var service = new HuggingFaceAnalysisService(client, config, loggerMock.Object);
+
+        // Act & Assert
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () =>
+        {
+            await service.AnalyzeAsync("x");
+        });
+    }
+
+    [TestMethod]
+    public async Task AnalyzeAsync_Throws_On_5xx()
+    {
+        // Arrange
+        var client = CreateMockHttpClient(HttpStatusCode.InternalServerError, "Server error");
+        var config = BuildConfig();
+        var service = new HuggingFaceAnalysisService(client, config, loggerMock.Object);
+
+        // Act & Assert
+        await Assert.ThrowsExactlyAsync<HttpRequestException>(async () =>
+        {
+            await service.AnalyzeAsync("x");
+        });
+    }
+
+    [TestMethod]
+    public async Task AnalyzeAsync_Retries_On_429_Then_Succeeds()
+    {
+        // Arrange
+        var callCount = 0;
+
+        var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(() =>
+            {
+                callCount++;
+                if (callCount < 3) // fail first 2 calls
+                    return new HttpResponseMessage((HttpStatusCode)429)
+                    {
+                        Content = new StringContent("Too Many Requests")
+                    };
+
+                // succeed on 3rd attempt
+                var hfResponse = new[]
+                {
+                        new { label = "COMPLIES", score = 0.95 }
+                };
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(hfResponse), Encoding.UTF8, "application/json")
+                };
+            });
+
+        var client = new HttpClient(handlerMock.Object);
+        var config = BuildConfig();
+        var service = new HuggingFaceAnalysisService(client, config, loggerMock.Object);
+
+        // Act
+        var result = await service.AnalyzeAsync("Test action");
+
+        // Assert
+        Assert.AreEqual("COMPLIES", result.Label);
+        Assert.AreEqual(0.95, result.Score);
+        Assert.AreEqual(3, callCount, "HttpClient should have been called 3 times due to retries");
+    }
 }
