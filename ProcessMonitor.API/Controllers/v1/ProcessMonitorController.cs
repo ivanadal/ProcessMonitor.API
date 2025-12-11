@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using ProcessMonitor.API.DTOs;
 using ProcessMonitor.API.Models;
+using ProcessMonitor.Domain.Entities;
 using ProcessMonitor.Domain.Interfaces;
 
 
@@ -27,16 +29,21 @@ namespace ProcessMonitor.API.Controllers.v1
             return Ok(analysisResult);
         }
 
-        // GET /processmonitor/history
+        // GET /processmonitor/history?page=1&pageSize=10
         [HttpGet("history")]
-        public async Task<ActionResult> GetHistory()
+        public async Task<ActionResult> GetHistory([FromQuery] HistoryQuery query)
         {
-            var history = await _repository.GetHistoryAsync();
+            var result = await _repository.GetPagedHistoryAsync(query.Page, query.PageSize);
+            var response = new HistoryQueryResponse<Analysis>
+            {
+                Page = query.Page,
+                PageSize = query.PageSize,
+                TotalPages = result.TotalPages,
+                TotalItems = result.TotalItems,
+                Items = (List<Analysis>)result.Items
+            };
 
-            if (history == null || !history.Any())
-                return NoContent(); 
-
-            return Ok(history);
+            return Ok(response);
         }
     }
 }

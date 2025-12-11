@@ -37,5 +37,25 @@ namespace ProcessMonitor.Infrastructure.Repositories
         {
             throw new NotImplementedException();
         }
+
+        public async Task<PagedResult<Analysis>> GetPagedHistoryAsync(int page, int pageSize)
+        {
+            var query = _db.Analyses.OrderByDescending(a => a.Timestamp);
+
+            var totalItems = await query.CountAsync();
+
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return new PagedResult<Analysis>
+            {
+                Items = items,
+                TotalItems = totalItems,
+                Page = page,
+                PageSize = pageSize
+            };
+        }
     }
 }

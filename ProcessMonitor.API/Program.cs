@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddValidatorsFromAssemblyContaining<AnalyzeRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<HistoryQueryValidator>();
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddScoped<IAnalysisService, AnalysisDomainService>();
