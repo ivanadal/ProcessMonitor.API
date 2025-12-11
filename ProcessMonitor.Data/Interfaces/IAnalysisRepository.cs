@@ -11,6 +11,6 @@ namespace ProcessMonitor.Domain.Interfaces
         Task<IEnumerable<Analysis>> GetHistoryAsync();
         Task<PagedResult<Analysis>> GetPagedHistoryAsync(int page, int pageSize);
         Task<int> GetTotalCountAsync();
-        Task<Dictionary<string, int>> GetCountByResultAsync();
+        Task<AnalysisSummary> GetSummaryAsync();
     }
 }

@@ -2,9 +2,6 @@
 using ProcessMonitor.Data;
 using ProcessMonitor.Domain.Entities;
 using ProcessMonitor.Domain.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ProcessMonitor.Infrastructure.Repositories
 {
@@ -55,6 +52,24 @@ namespace ProcessMonitor.Infrastructure.Repositories
                 TotalItems = totalItems,
                 Page = page,
                 PageSize = pageSize
+            };
+        }
+
+        public async Task<AnalysisSummary> GetSummaryAsync()
+        {
+            var total = await _db.Analyses.CountAsync();
+
+            var byResult = await _db.Analyses
+                .GroupBy(a => a.Result)
+                .Select(g => new { Result = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            return new AnalysisSummary
+            {
+                TotalAll = total,
+                TotalComplies = byResult.FirstOrDefault(x => x.Result == "COMPLIES")?.Count ?? 0,
+                TotalDeviates = byResult.FirstOrDefault(x => x.Result == "DEVIATES")?.Count ?? 0,
+                TotalUnclear = byResult.FirstOrDefault(x => x.Result == "UNCLEAR")?.Count ?? 0
             };
         }
     }

@@ -1,6 +1,5 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using ProcessMonitor.API.Middlewares;
 using ProcessMonitor.API.Validators;
 using ProcessMonitor.Data;

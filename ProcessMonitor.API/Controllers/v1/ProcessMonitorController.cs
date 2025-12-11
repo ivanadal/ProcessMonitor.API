@@ -45,5 +45,14 @@ namespace ProcessMonitor.API.Controllers.v1
 
             return Ok(response);
         }
+
+        // GET /summary
+        [HttpGet("summary")]
+        public async Task<ActionResult> GetSummary()
+        {
+            var result = await _repository.GetSummaryAsync();          
+
+            return Ok(result);
+        }
     }
 }
