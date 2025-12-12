@@ -8,15 +8,16 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using System.Net;
+using ProcessMonitor.Domain.Enums;
 
 namespace ProcessMonitor.Infrastructure.Services
 {
     public class HuggingFaceAnalysisService : IAIAnalysisService
     {
         private readonly HttpClient _httpClient;
-        private readonly string[] _candidateLabels = new[] { "complies", "deviates", "unclear" };
         private readonly string _endpoint;
         private readonly string _modelId;
+        private readonly float _threshold;
         private ILogger<HuggingFaceAnalysisService> _logger;
 
         public HuggingFaceAnalysisService(HttpClient httpClient, IConfiguration config, ILogger<HuggingFaceAnalysisService> logger)
@@ -24,17 +25,22 @@ namespace ProcessMonitor.Infrastructure.Services
             _httpClient = httpClient;
             _endpoint = config["HuggingFace:Endpoint"] ?? throw new InvalidOperationException("HuggingFace:Endpoint missing");
             _modelId = config["HuggingFace:ModelId"] ?? throw new InvalidOperationException("HuggingFace:ModelId missing");
+            _threshold = config.GetValue<float>("HuggingFace:ConfidenceThreshold", 0.6f);
             _logger = logger;
         }
 
-        public async Task<HuggingFaceResult> AnalyzeAsync(string action)
+        public async Task<HuggingFaceResult> AnalyzeAsync(string action, string guideline)
         {
             _logger.LogDebug($"{DateTime.UtcNow}: HuggingFaceAnalysisService: AnalyzeAsync method started.");
+
+            var candidateLabels = Enum.GetNames<CandidateLabelsEnum>()
+                                 .Select(l => $"{l.ToLower()} with guideline: {guideline}")
+                                 .ToArray();
 
             var payload = new
             {
                 inputs = action,
-                parameters = new { candidate_labels = _candidateLabels }
+                parameters = new { candidate_labels = candidateLabels },
             };
 
             var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
@@ -75,6 +81,7 @@ namespace ProcessMonitor.Infrastructure.Services
             var items = JsonSerializer.Deserialize<HuggingFaceResponseItem[]>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
+            // This could be also treated as UNCLEAR, it should be discussed depending on buisness needs
             if (items == null || items.Length == 0)
                 throw new InvalidOperationException("HuggingFace returned an empty or invalid response.");
 
@@ -82,9 +89,18 @@ namespace ProcessMonitor.Infrastructure.Services
 
             _logger.LogDebug($"{DateTime.UtcNow}: HuggingFaceAnalysisService: AnalyzeAsync - best: Label->{best.Label}; Score ->{best.Score}");
 
+            // Map full label string back to enum
+            var simpleLabel = best.Label.Split(' ')[0].ToLower() switch
+            {
+                "complies" => best.Score >= _threshold ? CandidateLabelsEnum.COMPLIES : CandidateLabelsEnum.UNCLEAR,
+                "deviates" => best.Score >= _threshold ? CandidateLabelsEnum.DEVIATES : CandidateLabelsEnum.UNCLEAR,
+                "unclear" => CandidateLabelsEnum.UNCLEAR,
+                _ => CandidateLabelsEnum.UNCLEAR
+            };
+
             return new HuggingFaceResult
             {
-                Label = best.Label,
+                Label = simpleLabel.ToString(),
                 Score = best.Score
             };
         }

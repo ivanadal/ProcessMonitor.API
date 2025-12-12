@@ -4,26 +4,25 @@ Process Monitor API evaluates whether actions taken during a process comply with
 
 ⚡ **You can run this API either via Docker or by building and running it traditionally with .NET 10 SDK.**
 
+
+
+## Running the API
+
 ---
 
 ## Prerequisites
 
-Before running the API, ensure you have the following installed:
+Before running the API, ensure you have the following:
 
-* [.NET SDK 10.x](https://dotnet.microsoft.com/en-us/download/dotnet)
-* [Visual Studio 2022+](https://visualstudio.microsoft.com/) or [VS Code](https://code.visualstudio.com/)
-* [SQLite](https://www.sqlite.org/download.html)
 * Optional: [Postman](https://www.postman.com/) for testing API endpoints
 * Optional: Companion console app for testing: [ProcessMonitor.App](https://github.com/ivanadal/ProcessMonitor.App)
 * Environment Variables:
 
   * `HuggingFaceApiKey` – token from [huggingface.co](https://huggingface.co)
-  * `ApiKey` – key for API authorization (used for mocking authorization) 
+  * `ApiKey` – key for ProcessMonitorAPI authorization (used for mocking authorization) 
   - Note: This is a small project and the API key is only for demonstration and local testing purposes. In production systems, you would normally use OAuth 2.0, JWT tokens, or another robust authentication/authorization mechanism instead of a static API key.
 
 ---
-
-## Running the API
 
 ### **Option 1: Using Docker**
 
@@ -50,11 +49,28 @@ podman run --rm -it -p 8080:80 `
 
 The API will be exposed on `http://localhost:5000` inside the container.
 
-> ⚠️ On Windows, make sure to add a `.dockerignore` file to exclude `.vs`, `bin`, `obj`, and other temporary files to avoid permission issues.
-
 ---
 
 ### **Option 2: Traditional .NET Build and Run**
+
+---
+
+## Prerequisites
+
+Before running the API, ensure you have the following:
+
+* [.NET SDK 10.x](https://dotnet.microsoft.com/en-us/download/dotnet)
+* [Visual Studio 2022+](https://visualstudio.microsoft.com/) or [VS Code](https://code.visualstudio.com/)
+* [SQLite](https://www.sqlite.org/download.html)
+* Optional: [Postman](https://www.postman.com/) for testing API endpoints
+* Optional: Companion console app for testing: [ProcessMonitor.App](https://github.com/ivanadal/ProcessMonitor.App)
+* Environment Variables:
+
+  * `HuggingFaceApiKey` – token from [huggingface.co](https://huggingface.co)
+  * `ApiKey` – key for ProcessMonitorAPI authorization (used for mocking authorization) 
+  - Note: This is a small project and the API key is only for demonstration and local testing purposes. In production systems, you would normally use OAuth 2.0, JWT tokens, or another robust authentication/authorization mechanism instead of a static API key.
+
+---
 
 1. **Clone the repository**
 
@@ -137,8 +153,13 @@ Logs are output to the console by default. You can configure logging in `appsett
 
 ---
 
-## Notes
+### Debugging Tip
+When debugging in Visual Studio, the debugger may pause on thrown exceptions (first-chance exceptions) even though they are properly caught by the global exception middleware.
 
-* The API uses SQLite by default.
-* Use environment variables to avoid storing sensitive data in `appsettings.json`.
-* The companion console app can be used to send requests and test endpoints without Postman.
+This is expected behavior and does not indicate a crash.
+
+To disable pausing:
+- Go to **Debug > Windows > Exception Settings**
+- Uncheck **Common Language Runtime Exceptions** (or uncheck "Thrown" for CLR exceptions)
+
+When running with `dotnet run` or in production, exceptions are handled normally with custom JSON responses.

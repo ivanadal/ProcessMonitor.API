@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.Extensions.Logging;
 using ProcessMonitor.Domain.Entities;
+using ProcessMonitor.Domain.Exceptions;
 using ProcessMonitor.Domain.Interfaces;
 
 
@@ -22,34 +23,45 @@ namespace ProcessMonitor.Domain.Services
 
         public async Task<Analysis> AnalyzeAsync(string action, string guideline)
         {
+            var startTime = DateTime.UtcNow;
             _logger.LogDebug($"{DateTime.UtcNow}: AnalysisDomainService: AnalyzeAsync method started.");
-            // Call external AI
-            var hfItem = await _hfService.AnalyzeAsync(action);
 
-            // Map HuggingFace result → Domain entity
-            var result = new Analysis
+            HuggingFaceResult hfResult;
+            float confidence = 0f;
+
+            try
+            {
+                // Call HuggingFace service
+                hfResult = await _hfService.AnalyzeAsync(action, guideline);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"HuggingFaceAnalysisService failed for Action='{action}', Guideline='{guideline}'");
+                throw new AnalysisServiceException("Failed to analyze action.", ex);
+            }
+
+            var analysis = new Analysis
             {
                 Action = action,
                 Guideline = guideline,
-                Result = hfItem.Label.Equals("complies", StringComparison.OrdinalIgnoreCase)
-                            ? "COMPLIES"
-                            : hfItem.Label.Equals("deviates", StringComparison.OrdinalIgnoreCase)
-                                ? "DEVIATES"
-                                : "UNCLEAR",
-                Confidence = Math.Round(hfItem.Score, 4),
+                Result = hfResult.Label,
+                Confidence = Math.Round(hfResult.Score, 4),
                 Timestamp = DateTime.UtcNow
             };
 
-            _logger.LogDebug($"{DateTime.UtcNow}: AnalysisDomainService: result retrieved from external service. " +
-                 $"Action='{result.Action}', Guideline='{result.Guideline}', Result='{result.Result}', " +
-                 $"Confidence={result.Confidence}, Timestamp={result.Timestamp:O}");
 
-            await _repository.AddAsync(result);
+            _logger.LogDebug($"{DateTime.UtcNow}: AnalysisDomainService: result retrieved from external service. " +
+                 $"Action='{analysis.Action}', Guideline='{analysis.Guideline}', Result='{analysis.Result}', " +
+                 $"Confidence={analysis.Confidence}, Timestamp={analysis.Timestamp:O}");
+
+            // NOTE: If this fails, in some production scenarios we would want to retry or queue for later processing
+            await _repository.AddAsync(analysis);
 
             _logger.LogDebug($"{DateTime.UtcNow}: AnalysisDomainService: AnalyzeAsync method ended.");
 
-            return result;
+            return analysis;
         }
+
 
     }
 
