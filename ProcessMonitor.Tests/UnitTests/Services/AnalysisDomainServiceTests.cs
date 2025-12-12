@@ -38,10 +38,10 @@ namespace ProcessMonitor.Tests.UnitTests.Services
             var action = "Closed ticket #48219 and sent confirmation email";
             var guideline = "All closed tickets must include a confirmation email";
 
-            _hfMock.Setup(s => s.AnalyzeAsync(action))
+            _hfMock.Setup(s => s.AnalyzeAsync(action, guideline))
                    .ReturnsAsync(new HuggingFaceResult
                    {
-                       Label = "complies",
+                       Label = "COMPLIES",
                        Score = 0.94
                    });
 
@@ -57,7 +57,7 @@ namespace ProcessMonitor.Tests.UnitTests.Services
             _repoMock.Verify(r => r.AddAsync(It.IsAny<Analysis>()), Times.Once);
 
             // Verify AI service was called
-            _hfMock.Verify(s => s.AnalyzeAsync(action), Times.Once);
+            _hfMock.Verify(s => s.AnalyzeAsync(action, guideline), Times.Once);
         }
 
         [TestMethod]
@@ -67,10 +67,10 @@ namespace ProcessMonitor.Tests.UnitTests.Services
             var action = "Did not send confirmation email";
             var guideline = "All closed tickets must include a confirmation email";
 
-            _hfMock.Setup(s => s.AnalyzeAsync(action))
+            _hfMock.Setup(s => s.AnalyzeAsync(action, guideline))
                    .ReturnsAsync(new HuggingFaceResult
                    {
-                       Label = "deviates",
+                       Label = "DEVIATES",
                        Score = 0.87
                    });
 
@@ -86,7 +86,7 @@ namespace ProcessMonitor.Tests.UnitTests.Services
             _repoMock.Verify(r => r.AddAsync(It.IsAny<Analysis>()), Times.Once);
 
             // Verify AI service was called
-            _hfMock.Verify(s => s.AnalyzeAsync(action), Times.Once);
+            _hfMock.Verify(s => s.AnalyzeAsync(action, guideline), Times.Once);
         }
 
         [TestMethod]
@@ -96,10 +96,10 @@ namespace ProcessMonitor.Tests.UnitTests.Services
             var action = "Some ambiguous action";
             var guideline = "Some guideline";
 
-            _hfMock.Setup(s => s.AnalyzeAsync(action))
+            _hfMock.Setup(s => s.AnalyzeAsync(action, guideline))
                    .ReturnsAsync(new HuggingFaceResult
                    {
-                       Label = "maybe",
+                       Label = "UNCLEAR",
                        Score = 0.5
                    });
 
@@ -115,7 +115,7 @@ namespace ProcessMonitor.Tests.UnitTests.Services
             _repoMock.Verify(r => r.AddAsync(It.IsAny<Analysis>()), Times.Once);
 
             // Verify AI service was called
-            _hfMock.Verify(s => s.AnalyzeAsync(action), Times.Once);
+            _hfMock.Verify(s => s.AnalyzeAsync(action, guideline), Times.Once);
         }
     }
 

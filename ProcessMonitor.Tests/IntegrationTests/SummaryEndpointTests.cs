@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc.Testing;
+﻿using System;
+using System.Net;
+using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -9,9 +13,6 @@ using ProcessMonitor.Data;
 using ProcessMonitor.Domain.Entities;
 using ProcessMonitor.Domain.Interfaces;
 using ProcessMonitor.Infrastructure.Repositories;
-using System;
-using System.Net;
-using System.Text.Json;
 
 namespace ProcessMonitor.Tests.IntegrationTests
 {
@@ -26,43 +27,45 @@ namespace ProcessMonitor.Tests.IntegrationTests
             TotalDeviates = 1,
             TotalUnclear = 1
         };
+
         [TestMethod]
-        public async Task GetSummary_ReturnsExpectedSummary_UsingRealRepository()
+        public async Task GetSummary_ReturnsExpectedSummary_UsingRealRepository_WithSqliteInMemory()
         {
-            await using var connection = new SqliteConnection("DataSource=:memory:");
+            // Create a single in-memory SQLite connection and keep it open for the test lifetime.
+            using var connection = new SqliteConnection("Data Source=:memory:;Cache=Shared");
             connection.Open();
 
             await using var factory = new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
                 {
+                    // Ensure the host environment is Development so ExceptionMiddleware emits details
+                    builder.UseEnvironment("Development");
+
                     builder.ConfigureAppConfiguration((context, cfg) =>
                     {
-                        cfg.AddInMemoryCollection(new Dictionary<string, string>
+                        // provide ApiKey (environment already set above)
+                        cfg.AddInMemoryCollection(new[]
                         {
-                    { "ApiKey", TestApiKey }
+                            new KeyValuePair<string, string>("ApiKey", TestApiKey)
                         });
                     });
 
                     builder.ConfigureServices(services =>
                     {
-                        // Remove the existing AppDbContext registration
-                        var descriptor = services.SingleOrDefault(
-                            d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-                        if (descriptor != null) services.Remove(descriptor);
-
+                        // Remove existing EF registrations so only our relational provider remains
                         services.RemoveAll(typeof(AppDbContext));
+                        services.RemoveAll(typeof(DbContextOptions<AppDbContext>));
 
-                        // Register SQLite In-Memory database for testing
-                        services.AddDbContext<AppDbContext>(options =>
-                            options.UseSqlite(connection));
+                        // Register AppDbContext using the open SQLite in-memory connection
+                        services.AddDbContext<AppDbContext>(opts => opts.UseSqlite(connection));
 
-                        // Replace repository with the real one
+                        // Replace repository with the real repository implementation
                         services.RemoveAll(typeof(IAnalysisRepository));
                         services.AddScoped<IAnalysisRepository, AnalysisRepository>();
                     });
                 });
 
-            // Seed database
+            // Seed the relational in-memory DB after the host is built
             using (var scope = factory.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -101,22 +104,33 @@ namespace ProcessMonitor.Tests.IntegrationTests
             var client = factory.CreateClient();
             client.DefaultRequestHeaders.Add("X-Api-Key", TestApiKey);
 
-            // Act
             var response = await client.GetAsync("/v1/processmonitor/summary");
 
-            // Assert
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            // If the endpoint returned a non-success status, dump response content to make the failure visible
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                string body = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    using var doc = JsonDocument.Parse(body);
+                    var pretty = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
+                    Assert.Fail($"Expected HTTP 200 OK but got {(int)response.StatusCode} {response.StatusCode}. Response body:\n{pretty}");
+                }
+                catch
+                {
+                    Assert.Fail($"Expected HTTP 200 OK but got {(int)response.StatusCode} {response.StatusCode}. Response body:\n{body}");
+                }
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var actual = JsonSerializer.Deserialize<AnalysisSummary>(json, options);
 
-            Assert.IsNotNull(actual);
-            Assert.AreEqual(_expected.TotalAll, actual.TotalAll);
-            Assert.AreEqual(_expected.TotalComplies, actual.TotalComplies);
-            Assert.AreEqual(_expected.TotalDeviates, actual.TotalDeviates);
-            Assert.AreEqual(_expected.TotalUnclear, actual.TotalUnclear);
+            Assert.IsNotNull(actual, "Response body deserialized to null.");
+            Assert.AreEqual(_expected.TotalAll, actual.TotalAll, "TotalAll mismatch.");
+            Assert.AreEqual(_expected.TotalComplies, actual.TotalComplies, "TotalComplies mismatch.");
+            Assert.AreEqual(_expected.TotalDeviates, actual.TotalDeviates, "TotalDeviates mismatch.");
+            Assert.AreEqual(_expected.TotalUnclear, actual.TotalUnclear, "TotalUnclear mismatch.");
         }
-
     }
 }

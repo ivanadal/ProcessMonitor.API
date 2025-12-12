@@ -1,15 +1,21 @@
-﻿using System.Net;
+﻿using System;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ProcessMonitor.Data;
 using ProcessMonitor.Domain.Entities;
 using ProcessMonitor.Domain.Interfaces;
-using ProcessMonitor.Infrastructure.Repositories;
+using ProcessMonitor.Infrastructure.Repositories;   
 
 namespace ProcessMonitor.Tests.IntegrationTests
 {
@@ -19,10 +25,14 @@ namespace ProcessMonitor.Tests.IntegrationTests
         private const string TestApiKey = "test-key";
 
         [TestMethod]
-        public async Task PostAnalyze_PersistsAndReturnsAnalysis_UsingRealRepositoryAndFakeAI()
+        public async Task PostAnalyze_PersistsAndReturnsAnalysis_UsingRealRepositoryAndFakeAI_WithSQLiteInMemory()
         {
             var expectedAction = "Closed ticket #48219 and sent confirmation email";
             var expectedGuideline = "All closed tickets must include a confirmation email";
+
+            // Create a single in-memory SQLite connection and keep it open for the test lifetime.
+            using var connection = new SqliteConnection("Data Source=:memory:;Cache=Shared");
+            connection.Open();
 
             await using var factory = new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
@@ -37,23 +47,38 @@ namespace ProcessMonitor.Tests.IntegrationTests
 
                     builder.ConfigureServices(services =>
                     {
-                        // Ensure only one EF provider is registered: remove app's registrations
+                        // Remove existing EF registrations so we can register our SQLite in-memory connection.
                         services.RemoveAll(typeof(AppDbContext));
                         services.RemoveAll(typeof(DbContextOptions<AppDbContext>));
 
-                        // Use isolated InMemory DB for the test
-                        var inMemoryDbName = "AnalyzeTestDb_" + Guid.NewGuid().ToString("N");
-                        services.AddDbContext<AppDbContext>(opts => opts.UseInMemoryDatabase(inMemoryDbName));
+                        // Register AppDbContext using the open SQLite in-memory connection (relational provider).
+                        services.AddDbContext<AppDbContext>(opts =>
+                        {
+                            opts.UseSqlite(connection);
+                        });
 
-                        // Ensure real repository is used
+                        // Use the real repository implementation backed by the in-memory SQLite DB
                         services.RemoveAll(typeof(IAnalysisRepository));
                         services.AddScoped<IAnalysisRepository, AnalysisRepository>();
 
                         // Replace external AI service with deterministic test double
                         services.RemoveAll(typeof(IAIAnalysisService));
-                        services.AddSingleton<IAIAnalysisService>(new TestAIAnalysisService("complies", 0.87654));
+                        services.AddSingleton<IAIAnalysisService>(new TestAIAnalysisService("COMPLIES", 0.87654));
                     });
                 });
+
+            // Ensure database schema exists and seed data if needed (do this after host is built)
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                // If your app uses migrations, use Migrate(); otherwise EnsureCreated is fine.
+                // Using relational SQLite provider allows Migrate() if migrations exist.
+                db.Database.EnsureCreated();
+
+                // No initial seed required for this test (we assert the record persisted by the POST)
+                // But you can seed here if needed.
+            }
 
             var client = factory.CreateClient();
             client.DefaultRequestHeaders.Add("X-Api-Key", TestApiKey);
@@ -102,13 +127,13 @@ namespace ProcessMonitor.Tests.IntegrationTests
             private readonly string _label;
             private readonly double _score;
 
-            public TestAIAnalysisService(string label, double score)
+            public TestAIAnalysisService(string label, double score)        
             {
                 _label = label;
                 _score = score;
             }
 
-            public Task<HuggingFaceResult> AnalyzeAsync(string action)
+            public Task<HuggingFaceResult> AnalyzeAsync(string action, string guideline)
             {
                 return Task.FromResult(new HuggingFaceResult
                 {

@@ -63,9 +63,9 @@ public sealed class HuggingFaceAnalysisServiceTests
         // Arrange
         string json = """
     [
-        { "label": "A", "score": 0.1 },
-        { "label": "B", "score": 0.9 },
-        { "label": "C", "score": 0.5 }
+        { "label": "COMPLIES", "score": 0.1 },
+        { "label": "DEVIATES", "score": 0.9 },
+        { "label": "UNCLEAR", "score": 0.5 }
     ]
     """;
 
@@ -76,10 +76,10 @@ public sealed class HuggingFaceAnalysisServiceTests
         var service = new HuggingFaceAnalysisService(client, config, loggerMock.Object);
 
         // Act
-        var result = await service.AnalyzeAsync("do something");
+        var result = await service.AnalyzeAsync("do something", "with guideline");
 
         // Assert
-        Assert.AreEqual("B", result.Label);
+        Assert.AreEqual("DEVIATES", result.Label);
         Assert.AreEqual(0.9, result.Score);
     }
 
@@ -101,7 +101,7 @@ public sealed class HuggingFaceAnalysisServiceTests
         var config = BuildConfig("https://api", "abc123");
         var service = new HuggingFaceAnalysisService(client, config, loggerMock.Object);
 
-        await service.AnalyzeAsync("run");
+        await service.AnalyzeAsync("run", "test");
 
         Assert.AreEqual("https://api/abc123", capturedUrl);
         Assert.Contains("\"inputs\":\"run\"", capturedBody);
@@ -116,7 +116,7 @@ public sealed class HuggingFaceAnalysisServiceTests
         var service = new HuggingFaceAnalysisService(client, config, loggerMock.Object);
 
         await Assert.ThrowsAsync<HttpRequestException>(() =>
-            service.AnalyzeAsync("x"));
+            service.AnalyzeAsync("x", "y"));
     }
 
     //[TestMethod]
@@ -140,7 +140,7 @@ public sealed class HuggingFaceAnalysisServiceTests
         var service = new HuggingFaceAnalysisService(client, config, loggerMock.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.AnalyzeAsync("test"));
+            service.AnalyzeAsync("test", "test"));
     }
 
     [TestMethod]
@@ -148,18 +148,18 @@ public sealed class HuggingFaceAnalysisServiceTests
     {
         var client = CreateMockHttpClient(HttpStatusCode.OK, """
     [
-        { "label": "A", "score": -10 },
-        { "label": "B", "score": -1 },
-        { "label": "C", "score": -5 }
+        { "label": "COMPLIES", "score": -10 },
+        { "label": "DEVIATES", "score": -1 },
+        { "label": "UNCLEAR", "score": -5 }
     ]
     """);
 
         var config = BuildConfig();
         var service = new HuggingFaceAnalysisService(client, config, loggerMock.Object);
 
-        var result = await service.AnalyzeAsync("x");
+        var result = await service.AnalyzeAsync("x", "y");
 
-        Assert.AreEqual("B", result.Label);
+        Assert.AreEqual("UNCLEAR", result.Label);
         Assert.AreEqual(-1, result.Score);
     }
 
@@ -174,7 +174,7 @@ public sealed class HuggingFaceAnalysisServiceTests
         // Act & Assert
         await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () =>
         {
-            await service.AnalyzeAsync("x");
+            await service.AnalyzeAsync("x", "y");
         });
     }
 
@@ -189,7 +189,7 @@ public sealed class HuggingFaceAnalysisServiceTests
         // Act & Assert
         await Assert.ThrowsExactlyAsync<HttpRequestException>(async () =>
         {
-            await service.AnalyzeAsync("x");
+            await service.AnalyzeAsync("x", "y");
         });
     }
 
@@ -232,7 +232,7 @@ public sealed class HuggingFaceAnalysisServiceTests
         var service = new HuggingFaceAnalysisService(client, config, loggerMock.Object);
 
         // Act
-        var result = await service.AnalyzeAsync("Test action");
+        var result = await service.AnalyzeAsync("Test action", "Test guideline");
 
         // Assert
         Assert.AreEqual("COMPLIES", result.Label);

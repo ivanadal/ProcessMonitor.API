@@ -59,8 +59,6 @@ namespace ProcessMonitor.Infrastructure.Repositories
         {
             _logger.LogDebug($"{DateTime.UtcNow}: AnalysisRepository: GetSummaryAsync started.");
 
-            throw new Exception();
-
             var byResult = await _db.Analyses
                 .GroupBy(a => a.Result)
                 .Select(g => new { Result = g.Key, Count = g.Count() })
