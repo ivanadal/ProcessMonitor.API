@@ -27,7 +27,6 @@ namespace ProcessMonitor.Domain.Services
             _logger.LogDebug($"{DateTime.UtcNow}: AnalysisDomainService: AnalyzeAsync method started.");
 
             HuggingFaceResult hfResult;
-            float confidence = 0f;
 
             try
             {
@@ -61,8 +60,5 @@ namespace ProcessMonitor.Domain.Services
 
             return analysis;
         }
-
-
     }
-
 }
